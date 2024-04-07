@@ -13,6 +13,7 @@ import { ChevronDown, Filter, SortAsc } from "lucide-react";
 import { useState } from "react";
 import axios from "axios";
 import Product from "@/components/Products/Product";
+import ProductSkeleton from "@/components/Products/ProductSkeleton";
 
 const SORT_OPTIONS = [
   { name: "None", value: "none" },
@@ -86,9 +87,13 @@ export default function Home() {
 
           {/* Product grid */}
           <ul className="lg:col-span-3 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-8">
-            {products?.map((product) => (
-              <Product product={product.metadata!} key={product.id} />
-            ))}
+            {products
+              ? products.map((product) => (
+                  <Product product={product.metadata!} key={product.id} />
+                ))
+              : new Array(12)
+                  .fill(null)
+                  .map((_, i) => <ProductSkeleton key={i} />)}
           </ul>
         </div>
       </section>
