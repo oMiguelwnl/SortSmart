@@ -10,7 +10,7 @@ import { cn } from "@/lib/utils";
 import { useQuery } from "@tanstack/react-query";
 import { QueryResult } from "@upstash/vector";
 import { ChevronDown, Filter, SortAsc } from "lucide-react";
-import { useState } from "react";
+import { useDebugValue, useState } from "react";
 import axios from "axios";
 import Product from "@/components/Products/Product";
 import ProductSkeleton from "@/components/Products/ProductSkeleton";
@@ -36,7 +36,7 @@ const COLOR_FILTERS = {
     { value: "beige", label: "Beige" },
     { value: "blue", label: "Blue" },
     { value: "green", label: "Green" },
-    { value: "Purple", label: "purple" },
+    { value: "purple", label: "Purple" },
   ] as const,
 };
 
@@ -56,6 +56,7 @@ export default function Home() {
     size: ["L", "M", "S"],
     sort: "none",
   });
+  console.log(filter);
 
   const { data: products } = useQuery({
     queryKey: ["products"],
@@ -71,6 +72,28 @@ export default function Home() {
       return data;
     },
   });
+
+  const applyArrayFilter = ({
+    category,
+    value,
+  }: {
+    category: keyof Omit<typeof filter, "price" | "sort">;
+    value: string;
+  }) => {
+    const isFilterApplied = filter[category].includes(value as never);
+
+    if (isFilterApplied) {
+      setFilter((prev) => ({
+        ...prev,
+        [category]: prev[category].filter((v) => v !== value),
+      }));
+    } else {
+      setFilter((prev) => ({
+        ...prev,
+        [category]: [...prev[category], value],
+      }));
+    }
+  };
 
   return (
     <main className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
@@ -130,7 +153,7 @@ export default function Home() {
             <Accordion type="multiple" className="animate-none">
               {/* color filter */}
               <AccordionItem value="color">
-                <AccordionTrigger className="py-3 text-sm text-graay-400 hover:text-gray-500">
+                <AccordionTrigger className="py-3 text-sm text-gray-400 hover:text-gray-500">
                   <span className="font-medium text-gray-900">Color</span>
                 </AccordionTrigger>
 
@@ -141,6 +164,13 @@ export default function Home() {
                         <input
                           type="checkbox"
                           id={`color-${optionIdx}`}
+                          onChange={() => {
+                            applyArrayFilter({
+                              category: "color",
+                              value: option.value,
+                            });
+                          }}
+                          checked={filter.color.includes(option.value)}
                           className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
                         />
                         <label
