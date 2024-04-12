@@ -79,7 +79,7 @@ export default function Home() {
     sort: "none",
   });
 
-  const { data: products } = useQuery({
+  const { data: products, refetch } = useQuery({
     queryKey: ["products"],
     queryFn: async () => {
       const { data } = await axios.post<QueryResult<TProduct>[]>(
@@ -87,12 +87,17 @@ export default function Home() {
         {
           filter: {
             sort: filter.sort,
+            color: filter.color,
+            price: filter.price.range,
+            size: filter.size,
           },
         }
       );
       return data;
     },
   });
+
+  const onSubmit = () => refetch();
 
   const applyArrayFilter = ({
     category,
@@ -114,6 +119,7 @@ export default function Home() {
         [category]: [...prev[category], value],
       }));
     }
+    onSubmit();
   };
 
   const minPrice = Math.min(filter.price.range[0], filter.price.range[1]);
@@ -320,19 +326,17 @@ export default function Home() {
                       <Slider
                         className={cn({ "opacity-50": !filter.price.isCustom })}
                         disabled={!filter.price.isCustom}
-                        onValueChange={
-                          (range) => {
-                            const [newMin , newMax] =range
+                        onValueChange={(range) => {
+                          const [newMin, newMax] = range;
 
-                            setFilter((prev) => ({
-                              ...prev,
-                              price:{
-                                isCustom:true,
-                                range: [newMin, newMax]
-                              }
-                            }))
-                          }
-                        }
+                          setFilter((prev) => ({
+                            ...prev,
+                            price: {
+                              isCustom: true,
+                              range: [newMin, newMax],
+                            },
+                          }));
+                        }}
                         value={
                           filter.price.isCustom
                             ? filter.price.range
