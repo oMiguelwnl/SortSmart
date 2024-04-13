@@ -10,7 +10,7 @@ import { cn } from "@/lib/utils";
 import { useQuery } from "@tanstack/react-query";
 import { QueryResult } from "@upstash/vector";
 import { ChevronDown, Filter, SortAsc } from "lucide-react";
-import { useDebugValue, useState } from "react";
+import { useCallback, useDebugValue, useState } from "react";
 import axios from "axios";
 import Product from "@/components/Products/Product";
 import ProductSkeleton from "@/components/Products/ProductSkeleton";
@@ -22,6 +22,8 @@ import {
 } from "@/components/ui/accordion";
 import { ProductState } from "@/lib/validators/product-validator";
 import { Slider } from "@/components/ui/slider";
+import debounce from "lodash.debounce";
+import EmptyState from "@/components/Products/EmptyState";
 
 const SORT_OPTIONS = [
   { name: "None", value: "none" },
@@ -98,6 +100,8 @@ export default function Home() {
   });
 
   const onSubmit = () => refetch();
+  const debouncedSubmit = debounce(onSubmit, 400);
+  const _debouncedSubmit = useCallback(debouncedSubmit, []);
 
   const applyArrayFilter = ({
     category,
@@ -119,7 +123,7 @@ export default function Home() {
         [category]: [...prev[category], value],
       }));
     }
-    onSubmit();
+    _debouncedSubmit();
   };
 
   const minPrice = Math.min(filter.price.range[0], filter.price.range[1]);
@@ -152,6 +156,7 @@ export default function Home() {
                       ...prev,
                       sort: option.value,
                     }));
+                    _debouncedSubmit();
                   }}
                 >
                   {option.name}
@@ -270,6 +275,7 @@ export default function Home() {
                                 range: [...option.value],
                               },
                             }));
+                            _debouncedSubmit();
                           }}
                           checked={
                             !filter.price.isCustom &&
@@ -299,6 +305,7 @@ export default function Home() {
                                 range: [0, 100],
                               },
                             }));
+                            _debouncedSubmit();
                           }}
                           checked={filter.price.isCustom}
                           className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
@@ -324,7 +331,9 @@ export default function Home() {
                         </div>
                       </div>
                       <Slider
-                        className={cn({ "opacity-50": !filter.price.isCustom })}
+                        className={cn({
+                          "opacity-50": !filter.price.isCustom,
+                        })}
                         disabled={!filter.price.isCustom}
                         onValueChange={(range) => {
                           const [newMin, newMax] = range;
@@ -336,6 +345,7 @@ export default function Home() {
                               range: [newMin, newMax],
                             },
                           }));
+                          _debouncedSubmit();
                         }}
                         value={
                           filter.price.isCustom
@@ -356,13 +366,17 @@ export default function Home() {
 
           {/* Product grid */}
           <ul className="lg:col-span-3 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-8">
-            {products
-              ? products.map((product) => (
-                  <Product product={product.metadata!} key={product.id} />
-                ))
-              : new Array(12)
-                  .fill(null)
-                  .map((_, i) => <ProductSkeleton key={i} />)}
+            {products && products.length === 0 ? (
+              <EmptyState />
+            ) : products ? (
+              products.map((product) => (
+                <Product product={product.metadata!} key={product.id} />
+              ))
+            ) : (
+              new Array(12)
+                .fill(null)
+                .map((_, i) => <ProductSkeleton key={i} />)
+            )}
           </ul>
         </div>
       </section>

@@ -1,6 +1,5 @@
 import { db } from "@/db";
 import { ProductFilterValidator } from "@/lib/validators/product-validator";
-import { Parentheses } from "lucide-react";
 import { NextRequest } from "next/server";
 
 class Filter {
@@ -12,9 +11,8 @@ class Filter {
 
   add(key: string, operator: string, value: string | number) {
     const filter = this.filters.get(key) || [];
-
     filter.push(
-      `${key} ${operator} ${typeof value === "number" ? value : `'${value}`}`
+      `${key} ${operator} ${typeof value === "number" ? value : `"${value}"`}`
     );
     this.filters.set(key, filter);
   }
@@ -44,9 +42,13 @@ export const POST = async (req: NextRequest) => {
     );
 
     const filter = new Filter();
+    if (color.length > 0)
+      color.forEach((color) => filter.add("color", "=", color));
+    else if (color.length === 0) filter.addRaw("color", `color = ""`);
 
-    color.forEach((color) => filter.add("color", "=", color));
-    size.forEach((size) => filter.add("size", "=", size));
+    if (size.length > 0) size.forEach((size) => filter.add("size", "=", size));
+    else if (size.length === 0) filter.addRaw("size", `size = ""`);
+
     filter.addRaw("price", `price >= ${price[0]} AND price <= ${price[1]}`);
 
     const products = await db.query({
